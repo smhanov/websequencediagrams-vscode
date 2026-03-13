@@ -1,0 +1,233 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "WebSequenceDiagrams",
+  "scopeName": "source.wsd",
+  "fileTypes": ["wsd", "mscdraw"],
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#title" },
+    { "include": "#option" },
+    { "include": "#autonumber" },
+    { "include": "#include" },
+    { "include": "#participant-with-alias" },
+    { "include": "#participant" },
+    { "include": "#activate-deactivate" },
+    { "include": "#note-inline" },
+    { "include": "#note-block" },
+    { "include": "#state-inline" },
+    { "include": "#state-block" },
+    { "include": "#ref-signal-inline" },
+    { "include": "#ref-signal-block" },
+    { "include": "#ref-inline" },
+    { "include": "#ref-block" },
+    { "include": "#group-keyword" },
+    { "include": "#end-keyword" },
+    { "include": "#parallel-open" },
+    { "include": "#parallel-close" },
+    { "include": "#signal" }
+  ],
+  "repository": {
+    "comment": {
+      "name": "comment.line.number-sign.wsd",
+      "match": "#.*$"
+    },
+
+    "title": {
+      "match": "(?i)^\\s*(title)\\b(.*)",
+      "captures": {
+        "1": { "name": "keyword.control.title.wsd" },
+        "2": { "name": "string.unquoted.title.wsd" }
+      }
+    },
+
+    "option": {
+      "match": "(?i)^\\s*(option)\\b(.*)",
+      "captures": {
+        "1": { "name": "keyword.control.option.wsd" },
+        "2": { "name": "string.unquoted.option-value.wsd" }
+      }
+    },
+
+    "autonumber": {
+      "match": "(?i)^\\s*(autonumber)\\b(.*)",
+      "captures": {
+        "1": { "name": "keyword.control.autonumber.wsd" },
+        "2": { "name": "constant.numeric.autonumber.wsd" }
+      }
+    },
+
+    "include": {
+      "match": "(?i)^\\s*(include)\\s+(\"[^\\n]*)",
+      "captures": {
+        "1": { "name": "keyword.control.include.wsd" },
+        "2": { "name": "string.quoted.double.include.wsd" }
+      }
+    },
+
+    "participant-with-alias": {
+      "match": "(?i)^\\s*(participant(?::(?:actor|database|collections|cloud|queue))?|actor)\\s+(.+?)\\s+(as)\\s+(\\S+)\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.participant.wsd" },
+        "2": { "name": "entity.name.type.participant.wsd" },
+        "3": { "name": "keyword.control.as.wsd" },
+        "4": { "name": "entity.name.type.alias.wsd" }
+      }
+    },
+
+    "participant": {
+      "match": "(?i)^\\s*(participant(?::(?:actor|database|collections|cloud|queue))?|actor)\\s+(.+)\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.participant.wsd" },
+        "2": { "name": "entity.name.type.participant.wsd" }
+      }
+    },
+
+    "activate-deactivate": {
+      "match": "(?i)^\\s*(activate|deactivate|destroy|create)\\s+(\\S+)",
+      "captures": {
+        "1": { "name": "keyword.control.activation.wsd" },
+        "2": { "name": "entity.name.type.participant.wsd" }
+      }
+    },
+
+    "note-inline": {
+      "match": "(?i)^\\s*(note\\s+(?:over|left\\s+of|right\\s+of))\\s+(.+?)\\s*(:.*)",
+      "captures": {
+        "1": { "name": "keyword.control.note.wsd" },
+        "2": { "name": "entity.name.type.participant.wsd" },
+        "3": { "name": "string.unquoted.note-text.wsd" }
+      }
+    },
+
+    "note-block": {
+      "begin": "(?i)^\\s*(note\\s+(?:over|left\\s+of|right\\s+of))\\s+(.+?)\\s*$",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.note.wsd" },
+        "2": { "name": "entity.name.type.participant.wsd" }
+      },
+      "end": "(?i)^\\s*(end\\s+note)\\s*$",
+      "endCaptures": {
+        "1": { "name": "keyword.control.end-note.wsd" }
+      },
+      "contentName": "string.unquoted.note-body.wsd"
+    },
+
+    "state-inline": {
+      "match": "(?i)^\\s*(state\\s+(?:over|left\\s+of|right\\s+of))\\s+(.+?)\\s*(:.*)",
+      "captures": {
+        "1": { "name": "keyword.control.state.wsd" },
+        "2": { "name": "entity.name.type.participant.wsd" },
+        "3": { "name": "string.unquoted.state-text.wsd" }
+      }
+    },
+
+    "state-block": {
+      "begin": "(?i)^\\s*(state\\s+(?:over|left\\s+of|right\\s+of))\\s+(.+?)\\s*$",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.state.wsd" },
+        "2": { "name": "entity.name.type.participant.wsd" }
+      },
+      "end": "(?i)^\\s*(end\\s+state)\\s*$",
+      "endCaptures": {
+        "1": { "name": "keyword.control.end-state.wsd" }
+      },
+      "contentName": "string.unquoted.state-body.wsd"
+    },
+
+    "ref-signal-inline": {
+      "comment": "Signal into a ref block with inline end: A-->+ref over B, C: input ... end ref-->>D: output",
+      "match": "(?i)^\\s*(.+?)\\s*(<-->|<->|-->>|->>|-->|->)([*+\\-]?)\\s*(ref\\s+over)\\s+(.+?)\\s*(:.*)",
+      "captures": {
+        "1": { "name": "entity.name.type.participant.source.wsd" },
+        "2": { "name": "keyword.operator.arrow.wsd" },
+        "3": { "name": "keyword.operator.modifier.wsd" },
+        "4": { "name": "keyword.control.ref.wsd" },
+        "5": { "name": "entity.name.type.participant.wsd" },
+        "6": { "name": "string.unquoted.message.wsd" }
+      }
+    },
+
+    "ref-signal-block": {
+      "comment": "Signal into a multi-line ref block: A-->+ref over B, C: input (newline) ... (newline) end ref-->>D: output",
+      "begin": "(?i)^\\s*(.+?)\\s*(<-->|<->|-->>|->>|-->|->)([*+\\-]?)\\s*(ref\\s+over)\\s+(.+?)\\s*(:.*)?$",
+      "beginCaptures": {
+        "1": { "name": "entity.name.type.participant.source.wsd" },
+        "2": { "name": "keyword.operator.arrow.wsd" },
+        "3": { "name": "keyword.operator.modifier.wsd" },
+        "4": { "name": "keyword.control.ref.wsd" },
+        "5": { "name": "entity.name.type.participant.wsd" },
+        "6": { "name": "string.unquoted.message.wsd" }
+      },
+      "end": "(?i)^\\s*(end\\s+ref)(?:\\s*(<-->|<->|-->>|->>|-->|->)\\s*(.+?)\\s*(:.*)?)?\\s*$",
+      "endCaptures": {
+        "1": { "name": "keyword.control.end-ref.wsd" },
+        "2": { "name": "keyword.operator.arrow.wsd" },
+        "3": { "name": "entity.name.type.participant.wsd" },
+        "4": { "name": "string.unquoted.message.wsd" }
+      },
+      "contentName": "string.unquoted.ref-body.wsd"
+    },
+
+    "ref-inline": {
+      "match": "(?i)^\\s*(ref\\s+over)\\s+(.+?)\\s*(:.*)",
+      "captures": {
+        "1": { "name": "keyword.control.ref.wsd" },
+        "2": { "name": "entity.name.type.participant.wsd" },
+        "3": { "name": "string.unquoted.ref-text.wsd" }
+      }
+    },
+
+    "ref-block": {
+      "begin": "(?i)^\\s*(ref\\s+over)\\s+(.+?)\\s*$",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.ref.wsd" },
+        "2": { "name": "entity.name.type.participant.wsd" }
+      },
+      "end": "(?i)^\\s*(end\\s+ref)(?:\\s*(<-->|<->|-->>|->>|-->|->)\\s*(.+?)\\s*(:.*)?)?\\s*$",
+      "endCaptures": {
+        "1": { "name": "keyword.control.end-ref.wsd" },
+        "2": { "name": "keyword.operator.arrow.wsd" },
+        "3": { "name": "entity.name.type.participant.wsd" },
+        "4": { "name": "string.unquoted.message.wsd" }
+      },
+      "contentName": "string.unquoted.ref-body.wsd"
+    },
+
+    "group-keyword": {
+      "match": "(?i)^\\s*(alt|opt|else|loop|par|parallel|seq)\\b(.*)",
+      "captures": {
+        "1": { "name": "keyword.control.group.wsd" },
+        "2": { "name": "string.unquoted.group-label.wsd" }
+      }
+    },
+
+    "end-keyword": {
+      "match": "(?i)^\\s*(end)\\b",
+      "captures": {
+        "1": { "name": "keyword.control.end.wsd" }
+      }
+    },
+
+    "parallel-open": {
+      "match": "\\{",
+      "name": "punctuation.section.block.begin.wsd"
+    },
+
+    "parallel-close": {
+      "match": "\\}",
+      "name": "punctuation.section.block.end.wsd"
+    },
+
+    "signal": {
+      "match": "^\\s*(.+?)\\s*(<-->|<->|-->>|->>|-->|->)([*+\\-]?)\\s*(.+?)\\s*(:)(.*)?$",
+      "captures": {
+        "1": { "name": "entity.name.type.participant.source.wsd" },
+        "2": { "name": "keyword.operator.arrow.wsd" },
+        "3": { "name": "keyword.operator.modifier.wsd" },
+        "4": { "name": "entity.name.type.participant.target.wsd" },
+        "5": { "name": "punctuation.separator.colon.wsd" },
+        "6": { "name": "string.unquoted.message.wsd" }
+      }
+    }
+  }
+}

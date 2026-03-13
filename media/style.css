@@ -1,0 +1,13 @@
+.wsd-diagram-container {
+  margin: 1em 0;
+  padding: 1em;
+  background-color: var(--vscode-editor-background);
+  text-align: center;
+  overflow-x: auto;
+}
+
+.wsd-diagram {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}

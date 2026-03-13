@@ -1,0 +1,99 @@
+{
+  "name": "websequencediagrams",
+  "displayName": "WebSequenceDiagrams",
+  "description": "The official WebSequenceDiagrams extension for VS Code. Render sequence diagrams in Markdown preview, get syntax highlighting, and let AI agents generate diagrams via MCP.",
+  "version": "1.0.0",
+  "publisher": "WebSequenceDiagrams",
+  "license": "MIT",
+  "icon": "media/icon.png",
+  "homepage": "https://www.websequencediagrams.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nicholasgasior/wsd-vscode-extension"
+  },
+  "bugs": {
+    "url": "https://github.com/nicholasgasior/wsd-vscode-extension/issues"
+  },
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Visualization",
+    "Programming Languages",
+    "Other"
+  ],
+  "keywords": [
+    "markdown",
+    "sequence diagram",
+    "wsd",
+    "websequencediagrams",
+    "preview",
+    "uml",
+    "mcp",
+    "diagram",
+    "documentation"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "wsd",
+        "aliases": ["WebSequenceDiagrams", "wsd"],
+        "extensions": [".wsd"]
+      }
+    ],
+    "grammars": [
+      {
+        "language": "wsd",
+        "scopeName": "source.wsd",
+        "path": "./syntaxes/wsd.tmLanguage.json"
+      }
+    ],
+    "markdown.markdownItPlugins": true,
+    "markdown.previewStyles": [
+      "./media/style.css"
+    ],
+    "mcpServerDefinitionProviders": [
+      {
+        "id": "wsd.mcpServer",
+        "label": "WebSequenceDiagrams MCP"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "WebSequenceDiagrams",
+      "properties": {
+        "websequencediagrams.style": {
+          "type": "string",
+          "default": "modern-blue",
+          "enum": [
+            "default",
+            "earth",
+            "modern-blue",
+            "mscgen",
+            "omegapple",
+            "qsd",
+            "rose",
+            "roundgreen"
+          ],
+          "description": "Select the default style for your sequence diagrams."
+        },
+        "websequencediagrams.apikey": {
+          "type": "string",
+          "default": "",
+          "description": "Optional: Enter your WebSequenceDiagrams API key to access premium styles and features."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.75.0",
+    "typescript": "^5.0.0"
+  }
+}
