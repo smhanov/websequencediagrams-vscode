@@ -1,18 +1,18 @@
 {
   "name": "websequencediagrams",
   "displayName": "WebSequenceDiagrams",
-  "description": "The official WebSequenceDiagrams extension for VS Code. Render sequence diagrams in Markdown preview, get syntax highlighting, and let AI agents generate diagrams via MCP.",
-  "version": "1.0.0",
+  "description": "The official WebSequenceDiagrams extension for VS Code. Author .wsd files with live preview, syntax highlighting, export to SVG/PNG/PDF, sharing, and AI agent integration via MCP.",
+  "version": "2.1.0",
   "publisher": "WebSequenceDiagrams",
   "license": "MIT",
   "icon": "media/icon.png",
   "homepage": "https://www.websequencediagrams.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nicholasgasior/wsd-vscode-extension"
+    "url": "https://github.com/smhanov/websequencediagrams-vscode"
   },
   "bugs": {
-    "url": "https://github.com/nicholasgasior/wsd-vscode-extension/issues"
+    "url": "https://github.com/smhanov/websequencediagrams-vscode/issues"
   },
   "engines": {
     "vscode": "^1.75.0"
@@ -31,7 +31,11 @@
     "uml",
     "mcp",
     "diagram",
-    "documentation"
+    "documentation",
+    "export",
+    "svg",
+    "png",
+    "pdf"
   ],
   "activationEvents": [],
   "main": "./out/extension.js",
@@ -39,8 +43,15 @@
     "languages": [
       {
         "id": "wsd",
-        "aliases": ["WebSequenceDiagrams", "wsd"],
-        "extensions": [".wsd"]
+        "aliases": [
+          "WebSequenceDiagrams",
+          "wsd"
+        ],
+        "extensions": [
+          ".wsd",
+          ".sequence",
+          ".seqdiag"
+        ]
       }
     ],
     "grammars": [
@@ -48,6 +59,12 @@
         "language": "wsd",
         "scopeName": "source.wsd",
         "path": "./syntaxes/wsd.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "wsd",
+        "path": "./snippets/wsd.snippets.json"
       }
     ],
     "markdown.markdownItPlugins": true,
@@ -60,6 +77,158 @@
         "label": "WebSequenceDiagrams MCP"
       }
     ],
+    "commands": [
+      {
+        "command": "wsd.showPreviewToSide",
+        "title": "WebSequenceDiagrams: Preview to Side",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "wsd.setApiKey",
+        "title": "WebSequenceDiagrams: Set API Key"
+      },
+      {
+        "command": "wsd.clearApiKey",
+        "title": "WebSequenceDiagrams: Clear API Key"
+      },
+      {
+        "command": "wsd.exportSvg",
+        "title": "WebSequenceDiagrams: Export as SVG"
+      },
+      {
+        "command": "wsd.exportPng",
+        "title": "WebSequenceDiagrams: Export as PNG"
+      },
+      {
+        "command": "wsd.exportPdf",
+        "title": "WebSequenceDiagrams: Export as PDF"
+      },
+      {
+        "command": "wsd.copyShareLink",
+        "title": "WebSequenceDiagrams: Copy Share Link"
+      },
+      {
+        "command": "wsd.openInBrowser",
+        "title": "WebSequenceDiagrams: Open in Browser"
+      },
+      {
+        "command": "wsd.openOnWebsite",
+        "title": "WebSequenceDiagrams: Open on websequencediagrams.com"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "when": "resourceLangId == wsd",
+          "command": "wsd.showPreviewToSide",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "wsd.showPreviewToSide",
+          "when": "resourceLangId == wsd"
+        },
+        {
+          "command": "wsd.exportSvg",
+          "when": "resourceLangId == wsd"
+        },
+        {
+          "command": "wsd.exportPng",
+          "when": "resourceLangId == wsd"
+        },
+        {
+          "command": "wsd.exportPdf",
+          "when": "resourceLangId == wsd"
+        },
+        {
+          "command": "wsd.copyShareLink",
+          "when": "resourceLangId == wsd"
+        },
+        {
+          "command": "wsd.openInBrowser",
+          "when": "resourceLangId == wsd"
+        },
+        {
+          "command": "wsd.openOnWebsite",
+          "when": "resourceLangId == wsd"
+        }
+      ],
+      "editor/context": [
+        {
+          "when": "resourceLangId == wsd",
+          "command": "wsd.showPreviewToSide",
+          "group": "wsd@1"
+        },
+        {
+          "when": "resourceLangId == wsd",
+          "command": "wsd.copyShareLink",
+          "group": "wsd@2"
+        },
+        {
+          "when": "resourceLangId == wsd",
+          "command": "wsd.openOnWebsite",
+          "group": "wsd@3"
+        },
+        {
+          "when": "resourceLangId == wsd",
+          "command": "wsd.openInBrowser",
+          "group": "wsd@4"
+        },
+        {
+          "when": "resourceLangId == wsd",
+          "command": "wsd.exportPng",
+          "group": "wsd_export@1"
+        },
+        {
+          "when": "resourceLangId == wsd",
+          "command": "wsd.exportSvg",
+          "group": "wsd_export@2"
+        },
+        {
+          "when": "resourceLangId == wsd",
+          "command": "wsd.exportPdf",
+          "group": "wsd_export@3"
+        }
+      ],
+      "explorer/context": [
+        {
+          "when": "resourceLangId == wsd",
+          "command": "wsd.showPreviewToSide",
+          "group": "wsd@1"
+        },
+        {
+          "when": "resourceLangId == wsd",
+          "command": "wsd.copyShareLink",
+          "group": "wsd@2"
+        },
+        {
+          "when": "resourceLangId == wsd",
+          "command": "wsd.openOnWebsite",
+          "group": "wsd@3"
+        },
+        {
+          "when": "resourceLangId == wsd",
+          "command": "wsd.openInBrowser",
+          "group": "wsd@4"
+        },
+        {
+          "when": "resourceLangId == wsd",
+          "command": "wsd.exportPng",
+          "group": "wsd_export@1"
+        },
+        {
+          "when": "resourceLangId == wsd",
+          "command": "wsd.exportSvg",
+          "group": "wsd_export@2"
+        },
+        {
+          "when": "resourceLangId == wsd",
+          "command": "wsd.exportPdf",
+          "group": "wsd_export@3"
+        }
+      ]
+    },
     "configuration": {
       "type": "object",
       "title": "WebSequenceDiagrams",
@@ -79,10 +248,10 @@
           ],
           "description": "Select the default style for your sequence diagrams."
         },
-        "websequencediagrams.apikey": {
+        "websequencediagrams.serverUrl": {
           "type": "string",
-          "default": "",
-          "description": "Optional: Enter your WebSequenceDiagrams API key to access premium styles and features."
+          "default": "https://www.websequencediagrams.com",
+          "description": "Base URL of the WebSequenceDiagrams server. Change this for enterprise/internal deployments."
         }
       }
     }
@@ -93,6 +262,7 @@
     "watch": "tsc -watch -p ./"
   },
   "devDependencies": {
+    "@types/node": "^25.5.0",
     "@types/vscode": "^1.75.0",
     "typescript": "^5.0.0"
   }

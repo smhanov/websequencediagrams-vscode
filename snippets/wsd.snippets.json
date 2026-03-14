@@ -1,0 +1,109 @@
+{
+  "Title": {
+    "prefix": "title",
+    "body": ["title ${1:Diagram Title}"],
+    "description": "Set the diagram title"
+  },
+  "Participant": {
+    "prefix": "participant",
+    "body": ["participant ${1:Name} as ${2:Alias}"],
+    "description": "Declare a participant with an alias"
+  },
+  "Participant Actor": {
+    "prefix": "actor",
+    "body": ["participant:actor ${1:Name} as ${2:Alias}"],
+    "description": "Declare an actor participant"
+  },
+  "Participant Database": {
+    "prefix": "database",
+    "body": ["participant:database ${1:Name} as ${2:Alias}"],
+    "description": "Declare a database participant"
+  },
+  "Signal": {
+    "prefix": "signal",
+    "body": ["${1:A}->${2:B}: ${3:message}"],
+    "description": "Solid arrow signal"
+  },
+  "Signal Dashed": {
+    "prefix": "reply",
+    "body": ["${1:A}-->${2:B}: ${3:message}"],
+    "description": "Dashed arrow signal (response)"
+  },
+  "Alt/Else": {
+    "prefix": "alt",
+    "body": [
+      "alt ${1:condition}",
+      "\t${2}",
+      "else ${3:condition}",
+      "\t${4}",
+      "end"
+    ],
+    "description": "Alt/else conditional block"
+  },
+  "Opt": {
+    "prefix": "opt",
+    "body": [
+      "opt ${1:condition}",
+      "\t${2}",
+      "end"
+    ],
+    "description": "Optional block"
+  },
+  "Loop": {
+    "prefix": "loop",
+    "body": [
+      "loop ${1:condition}",
+      "\t${2}",
+      "end"
+    ],
+    "description": "Loop block"
+  },
+  "Note Over": {
+    "prefix": "note",
+    "body": ["note over ${1:A},${2:B}: ${3:text}"],
+    "description": "Note over participants"
+  },
+  "Note Left Of": {
+    "prefix": "noteleft",
+    "body": ["note left of ${1:A}: ${2:text}"],
+    "description": "Note to the left of a participant"
+  },
+  "Note Right Of": {
+    "prefix": "noteright",
+    "body": ["note right of ${1:A}: ${2:text}"],
+    "description": "Note to the right of a participant"
+  },
+  "Activate": {
+    "prefix": "activate",
+    "body": ["activate ${1:A}"],
+    "description": "Activate a participant lifeline"
+  },
+  "Deactivate": {
+    "prefix": "deactivate",
+    "body": ["deactivate ${1:A}"],
+    "description": "Deactivate a participant lifeline"
+  },
+  "Parallel": {
+    "prefix": "par",
+    "body": [
+      "par",
+      "\t${1}",
+      "end"
+    ],
+    "description": "Parallel block"
+  },
+  "Autonumber": {
+    "prefix": "autonumber",
+    "body": ["autonumber"],
+    "description": "Enable automatic message numbering"
+  },
+  "Ref Over": {
+    "prefix": "ref",
+    "body": [
+      "ref over ${1:A},${2:B}",
+      "\t${3:description}",
+      "end ref"
+    ],
+    "description": "Reference block over participants"
+  }
+}

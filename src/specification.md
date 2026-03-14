@@ -1,429 +1,119 @@
-# Product Specification: WebSequenceDiagrams VS Code Markdown Support
+# Product Specification: WebSequenceDiagrams VS Code Extension V2
 
 ## 1. Executive Summary
 
-**Objective:** Create a VS Code extension that seamlessly integrates our WebSequenceDiagrams (WSD) syntax into VS Code's built-in Markdown preview, while also providing editor syntax highlighting for the diagram code and AI agent integration via the Model Context Protocol (MCP).
-**Target User:** Developers and technical writers who want to preview sequence diagrams side-by-side with their Markdown documentation without leaving their editor, and who want to use LLMs to generate diagrams.
-**V1 Scope:** - Support `wsd` fenced code blocks in Markdown.
+**Objective:** Evolve the V1 Markdown-only extension into a fully-featured standalone sequence diagram editor. V2 introduces a custom Webview for side-by-side live previews, supports dedicated `.wsd` files, migrates to a secure POST-based API client (to bypass URL length limits), and adds core commands like export and share.
 
-- Provide basic syntax highlighting for WSD keywords and arrows in the editor.
-- Convert the payload into a direct image URL using our `cdraw` endpoint (with optional API key support for premium features).
-- Render the resulting image in the preview pane.
-- Automatically register the WebSequenceDiagrams MCP Server so AI agents like GitHub Copilot can interact with the API.
+**Target User:** Backend developers and architects who want to author `.wsd` files directly in VS Code with instant, robust preview and presentation-ready exports.
 
-## 2. User Stories
+**V2 Scope (from PRD Phase 1 - MVP):**
 
-- **As a user**, when I write a Markdown fenced code block with the language identifier `wsd` or `websequencediagrams`, I want to see the rendered diagram in my VS Code Markdown Preview.
-- **As a user**, when I am typing inside a `wsd` code block, I want to see syntax highlighting for keywords, strings, and arrows to help me avoid typos.
-- **As a user**, I want my VS Code AI assistant (like Copilot) to understand how to generate and interpret sequence diagrams using the WebSequenceDiagrams MCP server.
-- **As a user**, I want to be able to configure my preferred diagram style (e.g., `modern-blue`, `rose`) in my VS Code settings.
-- **As a premium user**, I want to be able to enter my WSD API key in the extension settings so I can render diagrams using premium styles without watermarks or access rate limits.
+- Standalone file support (`.wsd`, `.sequence`, `.seqdiag`).
+- Code snippets for faster authoring.
+- Custom Webview Panel for "Live Preview to Side" (with 250ms debounce).
+- Export commands (SVG, PNG, PDF).
+- Share commands (Copy Link, Open in Browser).
+- Configuration for custom/internal WebSequenceDiagrams server URLs.
+- Security upgrade: Move API keys to VS Code's `SecretStorage`.
 
-## 3. Technical Architecture Overview
+## 2. Architecture Shifts from V1
 
-We will use a streamlined approach with three distinct VS Code extension contribution points:
+To support large diagrams, error handling, and standalone files, we must evolve the architecture:
 
-1. **Syntax Highlighting (TextMate Grammar):** We will define a custom language (`wsd`) and provide a basic TextMate grammar JSON file. VS Code automatically applies injected grammars to Markdown code blocks that match the language identifier.
-2. **Markdown Preview (`markdown-it` Plugin):** VS Code's Markdown parser (`markdown-it`) allows us to intercept specific code blocks during the parsing phase. When the parser encounters a `wsd` block, our plugin will read the diagram text, URL-encode it, and output a standard HTML `<img>` tag pointing to our `https://www.websequencediagrams.com/cgi-bin/cdraw` endpoint.
-3. **AI Integration (MCP Server Provider):** We will use the `vscode.lm.registerMcpServerDefinitionProvider` API to dynamically provide VS Code's AI agents with our remote SSE (Server-Sent Events) MCP endpoint at `https://www.websequencediagrams.com/mcp`.
-Because the rendering relies entirely on a standard `<img>` tag, we do not need to inject client-side scripts, and we do not have to worry about CORS restrictions in the VS Code webview.
+1. **From GET to POST:** V1 used a simple `<img>` tag in Markdown pointing to a GET endpoint (`cdraw`). V2 requires a dedicated API service module that uses `POST` requests to handle massive diagram payloads and parse structured JSON responses (errors, export URLs, share links).
+2. **From Markdown Preview to Custom Webview:** V1 piggybacked on `markdown-it`. V2 will use `vscode.window.createWebviewPanel` to create a dedicated, interactive preview pane that reacts to document edits.
+3. **From Plaintext Settings to SecretStorage:** API keys will be moved out of standard workspace settings into the secure, encrypted `context.secrets`.
 
-## 4. Step-by-Step Implementation Guide
+## 3. Step-by-Step Implementation Guide
 
-### Step 1: Extension Setup & Manifest (`package.json`)
+### Step 1: Expand Language Support & Add Snippets (`package.json`)
 
-You will need to register contribution points for the languages, grammars, Markdown extension API, MCP servers, and settings.
+First, we need to tell VS Code to recognize standard WSD files and provide useful code snippets (FR-003).
 
-Add the following to your `package.json`:
+**Tasks:**
 
+1. Update the `languages` array in `package.json` to include `.sequence` and `.seqdiag` extensions.
+2. Add a `snippets` contribution point to `package.json`:
 ```
-"contributes": {
-  "languages": [
-    {
-      "id": "wsd",
-      "aliases": ["WebSequenceDiagrams", "wsd"],
-      "extensions": [".wsd"]
-    }
-  ],
-  "grammars": [
-    {
-      "language": "wsd",
-      "scopeName": "source.wsd",
-      "path": "./syntaxes/wsd.tmLanguage.json"
-    }
-  ],
-  "markdown.markdownItPlugins": true,
-  "markdown.previewStyles": [
-    "./media/style.css"
-  ],
-  "mcpServerDefinitionProviders": [
-    {
-      "id": "wsd.mcpServer",
-      "label": "WebSequenceDiagrams MCP"
-    }
-  ],
-  "configuration": {
-    "type": "object",
-    "title": "WebSequenceDiagrams",
-    "properties": {
-      "websequencediagrams.style": {
-        "type": "string",
-        "default": "modern-blue",
-        "enum": ["default", "earth", "modern-blue", "mscgen", "omegapple", "qsd", "rose", "roundgreen"],
-        "description": "Select the default style for your sequence diagrams."
-      },
-      "websequencediagrams.apikey": {
-        "type": "string",
-        "default": "",
-        "description": "Optional: Enter your WebSequenceDiagrams API key to access premium styles and features."
-      }
-    }
+"snippets": [
+  {
+    "language": "wsd",
+    "path": "./snippets/wsd.snippets.json"
   }
-}
+]
 ```
+3. Create `snippets/wsd.snippets.json`. Add basic snippets for common structures:
+  - `title`: `title ${1:Diagram Title}`
+  - `participant`: `participant ${1:Name} as ${2:Alias}`
+  - `alt`: `alt ${1:condition}\n\t${2}\nelse ${3:condition}\n\t${4}\nend`
+  - `note`: `note over ${1:A},${2:B}: ${3:text}`
 
-### Step 2: Syntax Highlighting Grammar (`syntaxes/wsd.tmLanguage.json`)
+### Step 2: Configuration & API Key Migration
 
-Create a basic TextMate grammar file to highlight common WebSequenceDiagrams syntax. This will automatically light up inside ````wsd` blocks in Markdown files.
+We need to add support for custom servers and stop storing the API key in plain text (NFR-003).
 
-```
-{
-  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
-  "name": "WebSequenceDiagrams",
-  "scopeName": "source.wsd",
-  "fileTypes": ["wsd", "mscdraw"],
-  "patterns": [
-    { "include": "#comment" },
-    { "include": "#title" },
-    { "include": "#option" },
-    { "include": "#autonumber" },
-    { "include": "#include" },
-    { "include": "#participant-with-alias" },
-    { "include": "#participant" },
-    { "include": "#activate-deactivate" },
-    { "include": "#note-inline" },
-    { "include": "#note-block" },
-    { "include": "#state-inline" },
-    { "include": "#state-block" },
-    { "include": "#ref-signal-inline" },
-    { "include": "#ref-signal-block" },
-    { "include": "#ref-inline" },
-    { "include": "#ref-block" },
-    { "include": "#group-keyword" },
-    { "include": "#end-keyword" },
-    { "include": "#parallel-open" },
-    { "include": "#parallel-close" },
-    { "include": "#signal" }
-  ],
-  "repository": {
-    "comment": {
-      "name": "comment.line.number-sign.wsd",
-      "match": "#.*$"
-    },
+**Tasks:**
 
-    "title": {
-      "match": "(?i)^\\s*(title)\\b(.*)",
-      "captures": {
-        "1": { "name": "keyword.control.title.wsd" },
-        "2": { "name": "string.unquoted.title.wsd" }
-      }
-    },
+1. Remove `websequencediagrams.apikey` from the `configuration` block in `package.json`.
+2. Add a new setting to the `configuration` block in `package.json` called `websequencediagrams.serverUrl` with the type `string` and default value `https://www.websequencediagrams.com`. This supports companies utilizing an internal/enterprise WSD deployment.
+3. Add two new commands to `package.json`: `wsd.setApiKey` and `wsd.clearApiKey`.
+4. In `src/extension.ts`, register these commands. Use `vscode.window.showInputBox` to prompt for the key, and store it using `context.secrets.store('wsd.apikey', key)`.
 
-    "option": {
-      "match": "(?i)^\\s*(option)\\b(.*)",
-      "captures": {
-        "1": { "name": "keyword.control.option.wsd" },
-        "2": { "name": "string.unquoted.option-value.wsd" }
-      }
-    },
+### Step 3: Create the API Client (`src/api.ts`)
 
-    "autonumber": {
-      "match": "(?i)^\\s*(autonumber)\\b(.*)",
-      "captures": {
-        "1": { "name": "keyword.control.autonumber.wsd" },
-        "2": { "name": "constant.numeric.autonumber.wsd" }
-      }
-    },
+Create a dedicated module to handle communication with the WSD servers. This isolates network logic from editor logic.
 
-    "include": {
-      "match": "(?i)^\\s*(include)\\s+(\"[^\\n]*)",
-      "captures": {
-        "1": { "name": "keyword.control.include.wsd" },
-        "2": { "name": "string.quoted.double.include.wsd" }
-      }
-    },
+**Tasks:**
 
-    "participant-with-alias": {
-      "match": "(?i)^\\s*(participant(?::(?:actor|database|collections|cloud|queue))?|actor)\\s+(.+?)\\s+(as)\\s+(\\S+)\\s*$",
-      "captures": {
-        "1": { "name": "keyword.control.participant.wsd" },
-        "2": { "name": "entity.name.type.participant.wsd" },
-        "3": { "name": "keyword.control.as.wsd" },
-        "4": { "name": "entity.name.type.alias.wsd" }
-      }
-    },
+1. Create `src/api.ts`.
+2. Implement a function: `async function renderDiagram(code: string, style: string, format: string, baseUrl: string, apiKey?: string)`
+3. Use the native `fetch` API (available in modern Node/VS Code) to make a `POST` request to the official WSD render endpoint on the configured `baseUrl` (e.g., `${baseUrl}/index.php` or the designated JSON API).
+4. Handle the response. Return an object containing:
+  - The image buffer/URL (for the preview).
+  - Errors (if the diagram has a syntax error, parse the line number so we can surface it later).
+  - API Authorization errors (gracefully handle if an invalid/missing API key is rejected for premium formats).
+  - Share/Export URLs (if returned by the API).
 
-    "participant": {
-      "match": "(?i)^\\s*(participant(?::(?:actor|database|collections|cloud|queue))?|actor)\\s+(.+)\\s*$",
-      "captures": {
-        "1": { "name": "keyword.control.participant.wsd" },
-        "2": { "name": "entity.name.type.participant.wsd" }
-      }
-    },
+### Step 4: Implement the Live Preview Webview (`src/preview.ts`)
 
-    "activate-deactivate": {
-      "match": "(?i)^\\s*(activate|deactivate|destroy|create)\\s+(\\S+)",
-      "captures": {
-        "1": { "name": "keyword.control.activation.wsd" },
-        "2": { "name": "entity.name.type.participant.wsd" }
-      }
-    },
+This is the core of V2. We need a side-by-side panel that updates as the user types (FR-010, FR-011).
 
-    "note-inline": {
-      "match": "(?i)^\\s*(note\\s+(?:over|left\\s+of|right\\s+of))\\s+(.+?)\\s*(:.*)",
-      "captures": {
-        "1": { "name": "keyword.control.note.wsd" },
-        "2": { "name": "entity.name.type.participant.wsd" },
-        "3": { "name": "string.unquoted.note-text.wsd" }
-      }
-    },
+**Tasks:**
 
-    "note-block": {
-      "begin": "(?i)^\\s*(note\\s+(?:over|left\\s+of|right\\s+of))\\s+(.+?)\\s*$",
-      "beginCaptures": {
-        "1": { "name": "keyword.control.note.wsd" },
-        "2": { "name": "entity.name.type.participant.wsd" }
-      },
-      "end": "(?i)^\\s*(end\\s+note)\\s*$",
-      "endCaptures": {
-        "1": { "name": "keyword.control.end-note.wsd" }
-      },
-      "contentName": "string.unquoted.note-body.wsd"
-    },
+1. Create a class `WsdPreviewPanel` that manages a `vscode.WebviewPanel`.
+2. Register a command in `package.json`: `wsd.showPreviewToSide`.
+3. When executed, call `vscode.window.createWebviewPanel('wsdPreview', 'WSD Preview', vscode.ViewColumn.Beside, { enableScripts: true })`.
+4. **The Debounce Logic:** In `extension.ts`, listen to `vscode.workspace.onDidChangeTextDocument`. If the changed document is a `wsd` file, clear an existing timeout and set a new one for 250ms. When the timeout fires, send the document text to `WsdPreviewPanel.update(text)`.
+5. **Webview HTML:** The `update` method should fetch `websequencediagrams.serverUrl` from settings, call the API client from Step 3, get the resulting image data/URL, and set `panel.webview.html` to a simple HTML structure containing an `<img>` tag and basic error state UI (FR-051).
 
-    "state-inline": {
-      "match": "(?i)^\\s*(state\\s+(?:over|left\\s+of|right\\s+of))\\s+(.+?)\\s*(:.*)",
-      "captures": {
-        "1": { "name": "keyword.control.state.wsd" },
-        "2": { "name": "entity.name.type.participant.wsd" },
-        "3": { "name": "string.unquoted.state-text.wsd" }
-      }
-    },
+### Step 5: Export & Sharing Commands
 
-    "state-block": {
-      "begin": "(?i)^\\s*(state\\s+(?:over|left\\s+of|right\\s+of))\\s+(.+?)\\s*$",
-      "beginCaptures": {
-        "1": { "name": "keyword.control.state.wsd" },
-        "2": { "name": "entity.name.type.participant.wsd" }
-      },
-      "end": "(?i)^\\s*(end\\s+state)\\s*$",
-      "endCaptures": {
-        "1": { "name": "keyword.control.end-state.wsd" }
-      },
-      "contentName": "string.unquoted.state-body.wsd"
-    },
+Users need to get their diagrams out of the editor (FR-020, FR-030). Exporting to premium formats (SVG, PNG, PDF) requires a valid API key.
 
-    "ref-signal-inline": {
-      "comment": "Signal into a ref block with inline end: A-->+ref over B, C: input ... end ref-->>D: output",
-      "match": "(?i)^\\s*(.+?)\\s*(<-->|<->|-->>|->>|-->|->)([*+\\-]?)\\s*(ref\\s+over)\\s+(.+?)\\s*(:.*)",
-      "captures": {
-        "1": { "name": "entity.name.type.participant.source.wsd" },
-        "2": { "name": "keyword.operator.arrow.wsd" },
-        "3": { "name": "keyword.operator.modifier.wsd" },
-        "4": { "name": "keyword.control.ref.wsd" },
-        "5": { "name": "entity.name.type.participant.wsd" },
-        "6": { "name": "string.unquoted.message.wsd" }
-      }
-    },
+**Tasks:**
 
-    "ref-signal-block": {
-      "comment": "Signal into a multi-line ref block: A-->+ref over B, C: input (newline) ... (newline) end ref-->>D: output",
-      "begin": "(?i)^\\s*(.+?)\\s*(<-->|<->|-->>|->>|-->|->)([*+\\-]?)\\s*(ref\\s+over)\\s+(.+?)\\s*(:.*)?$",
-      "beginCaptures": {
-        "1": { "name": "entity.name.type.participant.source.wsd" },
-        "2": { "name": "keyword.operator.arrow.wsd" },
-        "3": { "name": "keyword.operator.modifier.wsd" },
-        "4": { "name": "keyword.control.ref.wsd" },
-        "5": { "name": "entity.name.type.participant.wsd" },
-        "6": { "name": "string.unquoted.message.wsd" }
-      },
-      "end": "(?i)^\\s*(end\\s+ref)(?:\\s*(<-->|<->|-->>|->>|-->|->)\\s*(.+?)\\s*(:.*)?)?\\s*$",
-      "endCaptures": {
-        "1": { "name": "keyword.control.end-ref.wsd" },
-        "2": { "name": "keyword.operator.arrow.wsd" },
-        "3": { "name": "entity.name.type.participant.wsd" },
-        "4": { "name": "string.unquoted.message.wsd" }
-      },
-      "contentName": "string.unquoted.ref-body.wsd"
-    },
+1. Register commands in `package.json`:
+  - `wsd.exportSvg`
+  - `wsd.exportPng`
+  - `wsd.exportPdf`
+  - `wsd.copyShareLink`
+  - `wsd.openInBrowser`
+2. **Export Logic:** When an export command is clicked, grab the text of the *active* text editor.
+  - **API Key Check:** Retrieve the API key from `context.secrets`. If missing, immediately abort the export and show an error: `vscode.window.showErrorMessage("Exporting requires a WebSequenceDiagrams API key. Please run the 'Set API Key' command.")`. Provide a button in the notification to trigger the `wsd.setApiKey` command.
+  - **API Call:** Call the API client requesting the specific format and passing the API key and configured `serverUrl`.
+  - **Save File:** Once the API returns the file URL/buffer, use `vscode.window.showSaveDialog` to let the user pick a save location on their hard drive, and write the file using `vscode.workspace.fs.writeFile`.
+3. **Share Logic:** For `copyShareLink`, hit the API using the configured `serverUrl` to generate the permalink, then use `vscode.env.clipboard.writeText(url)` to copy it. Show a `vscode.window.showInformationMessage("Link copied!")`.
+4. **Browser Logic:** For `openInBrowser`, generate the link and use `vscode.env.openExternal(vscode.Uri.parse(url))` to open the diagram on the currently configured WSD server.
 
-    "ref-inline": {
-      "match": "(?i)^\\s*(ref\\s+over)\\s+(.+?)\\s*(:.*)",
-      "captures": {
-        "1": { "name": "keyword.control.ref.wsd" },
-        "2": { "name": "entity.name.type.participant.wsd" },
-        "3": { "name": "string.unquoted.ref-text.wsd" }
-      }
-    },
+## 4. QA & Testing Requirements for V2
 
-    "ref-block": {
-      "begin": "(?i)^\\s*(ref\\s+over)\\s+(.+?)\\s*$",
-      "beginCaptures": {
-        "1": { "name": "keyword.control.ref.wsd" },
-        "2": { "name": "entity.name.type.participant.wsd" }
-      },
-      "end": "(?i)^\\s*(end\\s+ref)(?:\\s*(<-->|<->|-->>|->>|-->|->)\\s*(.+?)\\s*(:.*)?)?\\s*$",
-      "endCaptures": {
-        "1": { "name": "keyword.control.end-ref.wsd" },
-        "2": { "name": "keyword.operator.arrow.wsd" },
-        "3": { "name": "entity.name.type.participant.wsd" },
-        "4": { "name": "string.unquoted.message.wsd" }
-      },
-      "contentName": "string.unquoted.ref-body.wsd"
-    },
+Before marking V2 as complete, verify the following manually:
 
-    "group-keyword": {
-      "match": "(?i)^\\s*(alt|opt|else|loop|par|parallel|seq)\\b(.*)",
-      "captures": {
-        "1": { "name": "keyword.control.group.wsd" },
-        "2": { "name": "string.unquoted.group-label.wsd" }
-      }
-    },
-
-    "end-keyword": {
-      "match": "(?i)^\\s*(end)\\b",
-      "captures": {
-        "1": { "name": "keyword.control.end.wsd" }
-      }
-    },
-
-    "parallel-open": {
-      "match": "\\{",
-      "name": "punctuation.section.block.begin.wsd"
-    },
-
-    "parallel-close": {
-      "match": "\\}",
-      "name": "punctuation.section.block.end.wsd"
-    },
-
-    "signal": {
-      "match": "^\\s*(.+?)\\s*(<-->|<->|-->>|->>|-->|->)([*+\\-]?)\\s*(.+?)\\s*(:)(.*)?$",
-      "captures": {
-        "1": { "name": "entity.name.type.participant.source.wsd" },
-        "2": { "name": "keyword.operator.arrow.wsd" },
-        "3": { "name": "keyword.operator.modifier.wsd" },
-        "4": { "name": "entity.name.type.participant.target.wsd" },
-        "5": { "name": "punctuation.separator.colon.wsd" },
-        "6": { "name": "string.unquoted.message.wsd" }
-      }
-    }
-  }
-}
-```
-
-### Step 3: The Extension Logic (`src/extension.ts`)
-
-When the extension activates, we need to do two things:
-
-1. Return an object with the `extendMarkdownIt` function. This intercepts the `wsd` code blocks and replaces them with an `<img>` tag pointing to our GET API.
-2. Register the MCP server with VS Code's language models so AI agents can utilize it.
-
-```
-import * as vscode from 'vscode';
-
-export function activate(context: vscode.ExtensionContext) {
-  
-  // 1. Register the MCP server for AI Agents (Copilot, etc.)
-  context.subscriptions.push(
-    vscode.lm.registerMcpServerDefinitionProvider('wsd.mcpServer', {
-      provideMcpServerDefinitions() {
-        const config = vscode.workspace.getConfiguration('websequencediagrams');
-        const apikey = config.get('apikey', '');
-        
-        let mcpUrl = 'https://www.websequencediagrams.com/mcp';
-        
-        // Append API key to the MCP URL if configured so the LLM gets premium features
-        if (apikey) {
-          mcpUrl += `?apikey=${encodeURIComponent(apikey)}`;
-        }
-
-        return [{
-          type: 'sse', // Using Server-Sent Events (SSE) for remote HTTP servers
-          url: mcpUrl
-        }];
-      }
-    })
-  );
-
-  // 2. Extend the Markdown Preview
-  return {
-    extendMarkdownIt(md: any) {
-      const defaultRender = md.renderer.rules.fence;
-
-      md.renderer.rules.fence = (tokens: any[], idx: number, options: any, env: any, self: any) => {
-        const token = tokens[idx];
-        
-        // Intercept 'wsd' or 'websequencediagrams' language blocks
-        if (token.info && (token.info.trim() === 'wsd' || token.info.trim() === 'websequencediagrams')) {
-          const code = token.content;
-          
-          // Get user's preferred style and API key from settings
-          const config = vscode.workspace.getConfiguration('websequencediagrams');
-          const style = config.get('style', 'modern-blue');
-          const apikey = config.get('apikey', '');
-
-          // Construct the cdraw URL
-          let url = `https://www.websequencediagrams.com/cgi-bin/cdraw?s=${style}&m=${encodeURIComponent(code)}`;
-          
-          if (apikey) {
-            url += `&apikey=${encodeURIComponent(apikey)}`;
-          }
-
-          // Return a container with the image
-          return `<div class="wsd-diagram-container">
-                    <img src="${url}" alt="WebSequenceDiagram" class="wsd-diagram" />
-                  </div>`;
-        }
-        
-        // Fallback to default renderer for other code blocks
-        return defaultRender(tokens, idx, options, env, self);
-      };
-      
-      return md;
-    }
-  };
-}
-```
-
-### Step 4: Styling (`media/style.css`)
-
-Add some basic CSS to ensure the image sits nicely within the preview pane and respects the editor's boundaries.
-
-```
-.wsd-diagram-container {
-  margin: 1em 0;
-  padding: 1em;
-  background-color: var(--vscode-editor-background);
-  text-align: center;
-  overflow-x: auto;
-}
-
-.wsd-diagram {
-  max-width: 100%;
-  height: auto;
-  border-radius: 4px;
-}
-```
-
-## 5. QA & Testing Requirements
-
-Before submitting your Pull Request, please verify the following:
-
-1. **Syntax Highlighting:** Open a `.md` file, create a ````wsd` code block, and verify that keywords like `title`, `participant`, and arrows like `->` are highlighted in the editor.
-2. **Basic Rendering:** A standard Alice->Bob diagram renders properly in the Markdown preview pane.
-3. **Re-rendering:** Editing the text in the markdown pane instantly updates the image in the preview pane (VS Code triggers a markdown re-parse and the `<img>` src updates).
-4. **Settings Sync:** Change the global VS Code setting `websequencediagrams.style` to `rose`. Ensure newly typed diagrams render using the new style.
-5. **API Key Integration:** Insert a valid premium API key into the `websequencediagrams.apikey` setting. Verify that the diagram is generated with premium features unlocked.
-6. **Payload Limits:** Because we are using a GET request (`cdraw`), URLs can get very long. Test an exceptionally long sequence diagram to verify browser URL length limitations in the VS Code webview (typically safe up to ~2000-8000 characters depending on the engine).
-7. **MCP AI Integration:** Open GitHub Copilot Chat (or equivalent agent panel) and check that the `WebSequenceDiagrams MCP` server is visible and successfully connects. Prompt the agent to "Draw a sequence diagram for a login flow using the WSD MCP tool" and verify it executes the tool properly.
+1. **File Association:** Create a file named `test.sequence`. Ensure the WSD logo appears, syntax highlighting works, and your new snippets auto-complete.
+2. **Live Preview Debounce:** Open a `.wsd` file and trigger `Preview to Side`. Type rapidly. The API should *not* be called on every keystroke. It should only render ~250ms after you pause typing.
+3. **Error States:** Type an invalid WSD command (e.g., `notarealcommand Alice->Bob`). The Webview should cleanly display a readable error message, not just a broken image icon or white screen.
+4. **Secret Storage:** Use the `Set API Key` command. Restart VS Code. Verify the key is still applied to your previews (check for lack of watermarks or premium style availability).
+5. **Export Flow (Authenticated):** Use the `Set API Key` command to add a valid key. Run the Export PNG command. Select a folder. Verify the resulting image on your hard drive is perfectly readable and not corrupted.
+6. **Export Flow (Unauthenticated Check):** Run the `Clear API Key` command. Attempt to run Export SVG or PNG. Verify that a friendly error message appears prompting you to set your API key, and that no blank/corrupted file is saved to the disk.
+7. **Custom Server Config:** Change the `websequencediagrams.serverUrl` setting to a dummy local address (e.g., `http://localhost:9999`). Trigger a preview and check the extension host logs (or network traffic) to verify the request is routed to the custom URL instead of the public WSD server. Restore it to the default when finished testing.
+8. **Context Maintenance:** Ensure that the original Markdown V1 features (````wsd` blocks) still function normally alongside these new V2 standalone features.

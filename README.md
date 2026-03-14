@@ -3,13 +3,21 @@
 [![Visual Studio Marketplace](https://img.shields.io/visual-studio-marketplace/v/WebSequenceDiagrams.websequencediagrams)](https://marketplace.visualstudio.com/items?itemName=WebSequenceDiagrams.websequencediagrams)
 [![Installs](https://img.shields.io/visual-studio-marketplace/i/WebSequenceDiagrams.websequencediagrams)](https://marketplace.visualstudio.com/items?itemName=WebSequenceDiagrams.websequencediagrams)
 
-The official [WebSequenceDiagrams](https://www.websequencediagrams.com) extension brings sequence diagram authoring directly into Visual Studio Code. Write diagrams in Markdown, see them rendered live in the preview pane, and let AI assistants generate diagrams for you — all without leaving your editor.
+The official [WebSequenceDiagrams](https://www.websequencediagrams.com) extension for Visual Studio Code. Author `.wsd` files with a live side-by-side preview, export to SVG/PNG/PDF, share diagrams with a single command, and let AI assistants generate diagrams for you — all without leaving your editor.
 
 ![WebSequenceDiagrams in VS Code](https://www.websequencediagrams.com/images/vscode-hero.png)
 
 ---
 
 ## Features
+
+### Live Preview to Side
+
+Open any `.wsd`, `.sequence`, or `.seqdiag` file and run **"WebSequenceDiagrams: Preview to Side"** (or click the preview icon in the editor title bar). A dedicated panel appears beside your editor and updates automatically as you type, with a 250ms debounce for smooth performance.
+
+**Sticky participant headers** — When scrolling long diagrams, participant header boxes stay pinned to the top of the preview so you always know who is who.
+
+**Inline error display** — Syntax errors appear in a collapsible panel at the bottom of the preview, with line numbers. The diagram still renders as much as possible — errors don't replace the image.
 
 ### Render Diagrams in Markdown Preview
 
@@ -65,21 +73,71 @@ Choose from 8 built-in styles to match your team's preferences:
 
 Change your style anytime in Settings — new diagrams render with the updated style immediately.
 
+### Export to SVG, PNG & PDF
+
+Export presentation-ready diagrams directly from VS Code:
+
+- **WebSequenceDiagrams: Export as SVG**
+- **WebSequenceDiagrams: Export as PNG**
+- **WebSequenceDiagrams: Export as PDF**
+
+PNG export works without an API key. SVG and PDF export require a premium API key. Diagrams export even if they contain syntax errors.
+A save dialog lets you choose the destination, defaulting to the current file's directory.
+
+### Share & Open in Browser
+
+- **WebSequenceDiagrams: Copy Share Link** — generates a compact permalink using LZ77 compression and copies it to your clipboard.
+- **WebSequenceDiagrams: Open in Browser** — opens the compressed diagram link directly in your browser.
+- **WebSequenceDiagrams: Open on websequencediagrams.com** — opens the diagram on the website editor where you can continue editing it.
+
+None of these commands require an API key or a server round-trip — the link is generated entirely client-side.
+
+### Context Menu Integration
+
+All major commands (Preview, Share, Export, Open on Website) are available in the right-click context menu when editing a `.wsd` file or right-clicking one in the file explorer.
+
+### Code Snippets
+
+Type common keywords and tab-complete full structures:
+
+| Prefix | Expands to |
+|---|---|
+| `title` | `title Diagram Title` |
+| `participant` | `participant Name as Alias` |
+| `alt` | Full `alt`/`else`/`end` block |
+| `loop` | Full `loop`/`end` block |
+| `note` | `note over A,B: text` |
+| `signal` | `A->B: message` |
+| `reply` | `A-->B: message` |
+| ...and more | `opt`, `par`, `ref`, `activate`, `deactivate`, `autonumber`, `actor`, `database` |
+
 ### Premium Features
 
-Have a [WebSequenceDiagrams premium account](https://www.websequencediagrams.com)? Enter your API key in the extension settings to:
+Have a [WebSequenceDiagrams premium account](https://www.websequencediagrams.com)? Store your API key securely:
+
+1. Run **"WebSequenceDiagrams: Set API Key"** from the Command Palette.
+2. Your key is saved in VS Code's encrypted SecretStorage — never in plain-text settings.
+
+With a premium key you can:
 
 - Remove watermarks from rendered diagrams
+- Export to SVG, PNG, and PDF
 - Access premium styles
 - Unlock higher rate limits
+
+To remove a stored key, run **"WebSequenceDiagrams: Clear API Key"**.
+
+### Enterprise / Custom Server
+
+Using an internal WebSequenceDiagrams deployment? Set the `websequencediagrams.serverUrl` setting to your server's base URL. All API calls, previews, and exports will route there.
 
 ---
 
 ## Getting Started
 
 1. **Install** the extension from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=WebSequenceDiagrams.websequencediagrams).
-2. **Open or create** a Markdown file (`.md`).
-3. **Add a diagram** using a `wsd` fenced code block:
+2. **Open or create** a `.wsd` file (or a Markdown file with a `wsd` code block).
+3. **Preview** — run "Preview to Side" from the Command Palette or click the preview icon, or use the Markdown preview for fenced blocks:
 
 ````markdown
 ```wsd
@@ -88,19 +146,34 @@ Bob-->Alice: I am good thanks!
 ```
 ````
 
-4. **Open Markdown Preview** — press `Ctrl+Shift+V` (or `Cmd+Shift+V` on macOS).
-5. Your diagram appears live in the preview pane.
+4. **Export or share** — use the Command Palette commands to export as SVG/PNG/PDF or share a link.
+
+---
+
+## Commands
+
+| Command | Description |
+|---|---|
+| `WebSequenceDiagrams: Preview to Side` | Open a live preview panel beside the editor |
+| `WebSequenceDiagrams: Set API Key` | Securely store your premium API key |
+| `WebSequenceDiagrams: Clear API Key` | Remove the stored API key |
+| `WebSequenceDiagrams: Export as SVG` | Export the current diagram as SVG |
+| `WebSequenceDiagrams: Export as PNG` | Export the current diagram as PNG |
+| `WebSequenceDiagrams: Export as PDF` | Export the current diagram as PDF |
+| `WebSequenceDiagrams: Copy Share Link` | Copy a shareable link to the clipboard |
+| `WebSequenceDiagrams: Open in Browser` | Open the diagram image in your browser |
+| `WebSequenceDiagrams: Open on websequencediagrams.com` | Open the diagram in the website editor |
 
 ---
 
 ## Extension Settings
 
-This extension contributes the following settings:
-
 | Setting | Type | Default | Description |
 |---|---|---|---|
 | `websequencediagrams.style` | `string` | `modern-blue` | The diagram style to use for rendering. |
-| `websequencediagrams.apikey` | `string` | *(empty)* | Your WebSequenceDiagrams API key for premium features. |
+| `websequencediagrams.serverUrl` | `string` | `https://www.websequencediagrams.com` | Base URL of the WSD server (change for enterprise deployments). |
+
+API keys are stored securely via VS Code's SecretStorage, not in settings. Use the **Set API Key** / **Clear API Key** commands.
 
 Access settings via **File > Preferences > Settings** and search for *"WebSequenceDiagrams"*.
 
@@ -182,29 +255,30 @@ deactivate OrderService
 
 ---
 
-## Standalone `.wsd` Files
+## Standalone Files
 
-In addition to Markdown code blocks, this extension registers the `.wsd` file extension. Open any `.wsd` file to get syntax highlighting out of the box.
+This extension recognizes `.wsd`, `.sequence`, and `.seqdiag` file extensions. Open any of these to get syntax highlighting, snippets, live preview, and all commands out of the box.
 
 ---
 
 ## Requirements
 
 - Visual Studio Code 1.75.0 or later
-- An internet connection (diagrams are rendered via the WebSequenceDiagrams cloud service)
+- An internet connection (diagrams are rendered via the WebSequenceDiagrams cloud service, or your configured server)
 
 ---
 
 ## Known Limitations
 
-- Diagrams are rendered server-side via a GET request. Extremely long diagrams (over ~8,000 characters of source text) may exceed URL length limits in some environments.
-- The Markdown preview must have network access to `https://www.websequencediagrams.com`.
+- The standalone live preview and export use POST requests, so there is no URL length limit. Markdown preview and share links use LZ77-compressed URLs for compact representation.
+- The preview pane and exports require network access to your configured WSD server.
+- Share links and "Open on websequencediagrams.com" are generated client-side and do not require network access.
 
 ---
 
 ## Feedback & Support
 
-- **Issues & Feature Requests:** [GitHub Issues](https://github.com/nicholasgasior/wsd-vscode-extension/issues)
+- **Issues & Feature Requests:** [GitHub Issues](https://github.com/smhanov/websequencediagrams-vscode/issues)
 - **Documentation:** [WebSequenceDiagrams Syntax Reference](https://www.websequencediagrams.com/examples.html)
 - **Website:** [www.websequencediagrams.com](https://www.websequencediagrams.com)
 
