@@ -5,8 +5,6 @@
 
 The official [WebSequenceDiagrams](https://www.websequencediagrams.com) extension for Visual Studio Code. Author `.wsd` files with a live side-by-side preview, export to SVG/PNG/PDF, share diagrams with a single command, and let AI assistants generate diagrams for you — all without leaving your editor.
 
-![WebSequenceDiagrams in VS Code](https://www.websequencediagrams.com/images/vscode-hero.png)
-
 ---
 
 ## Features

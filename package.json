@@ -2,7 +2,7 @@
   "name": "websequencediagrams",
   "displayName": "WebSequenceDiagrams",
   "description": "The official WebSequenceDiagrams extension for VS Code. Author .wsd files with live preview, syntax highlighting, export to SVG/PNG/PDF, sharing, and AI agent integration via MCP.",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "publisher": "WebSequenceDiagrams",
   "license": "MIT",
   "icon": "media/icon.png",
