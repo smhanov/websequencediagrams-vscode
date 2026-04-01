@@ -3,7 +3,18 @@
 [![Visual Studio Marketplace](https://img.shields.io/visual-studio-marketplace/v/WebSequenceDiagrams.websequencediagrams)](https://marketplace.visualstudio.com/items?itemName=WebSequenceDiagrams.websequencediagrams)
 [![Installs](https://img.shields.io/visual-studio-marketplace/i/WebSequenceDiagrams.websequencediagrams)](https://marketplace.visualstudio.com/items?itemName=WebSequenceDiagrams.websequencediagrams)
 
+![WebSequenceDiagrams in VS Code](wsd-hero.png)
+
 The official [WebSequenceDiagrams](https://www.websequencediagrams.com) extension for Visual Studio Code. Author `.wsd` files with a live side-by-side preview, export to SVG/PNG/PDF, share diagrams with a single command, and let AI assistants generate diagrams for you — all without leaving your editor.
+
+---
+
+## Quick Start
+
+1. Create a new file and save it with a `.wsd` extension (e.g., `diagram.wsd`).
+2. Type your sequence diagram syntax (e.g., `A->B: Hello`).
+3. **Right-click** anywhere in the file (or on the file in the Explorer) and select **WebSequenceDiagrams: Preview to Side**.
+4. Enjoy the live, side-by-side preview as you type!
 
 ---
 
